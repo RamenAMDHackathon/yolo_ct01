@@ -2,7 +2,6 @@
 import argparse
 import os
 import sys
-import time
 import subprocess
 from typing import Dict, List, Optional
 
@@ -52,8 +51,6 @@ def main() -> int:
     p.add_argument("--type", dest="robot_type", default=None, help="Robot type override (default: from config system.robot_type or env ROBOT_TYPE)")
     p.add_argument("--deg", default=None, help="Comma-separated degrees list (6 joints). If omitted, use config system.robot_init_pose")
     p.add_argument("--duration", default=None, help="Motion duration seconds (default: from config system.home_reset_duration_s or 4)")
-    p.add_argument("--sleep-before", type=float, default=None, help="Sleep seconds before executing homereset (default: system.homing_sleep_before_s)")
-    p.add_argument("--sleep-after", type=float, default=None, help="Sleep seconds after executing homereset (default: system.homing_sleep_after_s)")
     args = p.parse_args()
 
     cfg = load_config(args.config)
@@ -79,19 +76,13 @@ def main() -> int:
             return 1
         deg_str = ",".join(str(v) for v in vals)
 
-    # Resolve duration and sleeps
+    # Resolve duration only（sleep は無視）
     duration = args.duration or str(system.get("home_reset_duration_s", 4))
-    sleep_before = args.sleep_before if args.sleep_before is not None else float(system.get("homing_sleep_before_s", 0))
-    sleep_after = args.sleep_after if args.sleep_after is not None else float(system.get("homing_sleep_after_s", 0))
 
     print(f"[run_home_reset] Using config: {args.config}")
     print(f"[run_home_reset] Script: {script_path}")
     print(f"[run_home_reset] Port: {port}  Type: {robot_type}")
-    print(f"[run_home_reset] Deg: {deg_str}  Duration: {duration}s  Sleep(before/after): {sleep_before}/{sleep_after}")
-
-    if sleep_before > 0:
-        print(f"[run_home_reset] Sleeping {sleep_before}s before homereset...")
-        time.sleep(sleep_before)
+    print(f"[run_home_reset] Deg: {deg_str}  Duration: {duration}s")
 
     cmd = [
         sys.executable,
@@ -110,14 +101,9 @@ def main() -> int:
         print(f"[run_home_reset] Failed to execute homereset.py: {e}")
         rc = 2
 
-    if sleep_after > 0:
-        print(f"[run_home_reset] Sleeping {sleep_after}s after homereset...")
-        time.sleep(sleep_after)
-
     print(f"[run_home_reset] Done with exit code {rc}")
     return rc
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
