@@ -57,7 +57,6 @@ if [ -n "${TIMEOUT_BIN}" ]; then
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
-    --fps "${FPS}" \
     --robot.id="${ROBOT_ID}" \
     --robot.cameras="${ROBOT_CAMERAS}" \
     --dataset.single_task="${DATASET_SINGLE_TASK}" \
@@ -71,8 +70,7 @@ else
   "${CONTROL_BIN}" \
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
-    --policy.path="${POLICY_PATH}" \
-    --fps "${FPS}" \
+    --policy.path="${POLICY_PATH}" \や manager.py のようなもの）の中で、以下のように cap.release() を挟んでください。
     --robot.id="${ROBOT_ID}" \
     --robot.cameras="${ROBOT_CAMERAS}" \
     --dataset.single_task="${DATASET_SINGLE_TASK}" \
