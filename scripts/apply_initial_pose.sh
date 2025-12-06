@@ -1,5 +1,6 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+# POSIX sh 互換。dash 等でも動くように pipefail は使いません。
+set -eu
 
 # Helper to apply initial pose. In this repo it only logs the intent.
 # If you have a real control tool, replace the echo section with actual commands.
@@ -20,4 +21,3 @@ fi
 # This is left as a no-op to avoid errors in validation environments.
 
 exit 0
-

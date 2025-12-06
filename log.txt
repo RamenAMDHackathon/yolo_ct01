@@ -1,139 +1,85 @@
+import time
+import numpy as np
+from lerobot.common.robot_devices.robots.factory import make_robot
 
-keisukeotani@KeisukenoMac-mini yolo_test % 
-keisukeotani@KeisukenoMac-mini yolo_test % CONF=0.5 RUN_MODE=production python3  manager.py
-[manager] Loading YOLO weights: yolov8n.pt
-[manager] device=mps, camera_index=0, robot_port=/dev/ttyACM1, mode=production
-2025-12-06 20:35:08.419 Python[37669:353787] WARNING: AVCaptureDeviceTypeExternal is deprecated for Continuity Cameras. Please use AVCaptureDeviceTypeContinuityCamera and add NSCameraUseContinuityCameraDeviceType to your Info.plist.
-[manager] Monitoring. 20s ticker; only cup/bottle logs. Press 'q' to quit.
-[manager] [tick] queue=['cup']
-[manager] [camera] Releasing camera before task generation...
-[manager] [camera] Camera released.
-[manager] Executing 'cup': AmdRamen/mission2_cup for 20s
-+ '[' -n '' ']'
-+ echo '[WARN] timeout command not available; running without enforced duration'
-[WARN] timeout command not available; running without enforced duration
-+ lerobot-record --robot.type=so101_follower --robot.port=/dev/ttyACM1 --policy.path=AmdRamen/mission2_cup --dataset.fps 30 --robot.id=my_awesome_follower_arm '--robot.cameras={top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}' '--dataset.single_task=put the pen in the white square' --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false
-config.json: 1.66kB [00:00, 1.31MB/s]
-WARNING:lerobot.configs.policies:Device 'cuda' is not available. Switching to 'mps'.
-WARNING:lerobot.configs.policies:Device 'cuda' is not available. Switching to 'mps'.
-INFO 2025-12-06 20:35:16 t_record.py:375 {'dataset': {'episode_time_s': 20,
-             'fps': 30,
-             'num_episodes': 5,
-             'num_image_writer_processes': 0,
-             'num_image_writer_threads_per_camera': 4,
-             'private': False,
-             'push_to_hub': False,
-             'rename_map': {},
-             'repo_id': 'AmdRamen/eval_mission_1',
-             'reset_time_s': 60,
-             'root': '/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/',
-             'single_task': 'put the pen in the white square',
-             'tags': None,
-             'video': True,
-             'video_encoding_batch_size': 1},
- 'display_data': False,
- 'play_sounds': True,
- 'policy': {'chunk_size': 100,
-            'device': 'mps',
-            'dim_feedforward': 3200,
-            'dim_model': 512,
-            'dropout': 0.1,
-            'feedforward_activation': 'relu',
-            'input_features': {'observation.images.side': {'shape': (3,
-                                                                     480,
-                                                                     640),
-                                                           'type': <FeatureType.VISUAL: 'VISUAL'>},
-                               'observation.images.top': {'shape': (3,
-                                                                    480,
-                                                                    640),
-                                                          'type': <FeatureType.VISUAL: 'VISUAL'>},
-                               'observation.state': {'shape': (6,),
-                                                     'type': <FeatureType.STATE: 'STATE'>}},
-            'kl_weight': 10.0,
-            'latent_dim': 32,
-            'license': None,
-            'n_action_steps': 100,
-            'n_decoder_layers': 1,
-            'n_encoder_layers': 4,
-            'n_heads': 8,
-            'n_obs_steps': 1,
-            'n_vae_encoder_layers': 4,
-            'normalization_mapping': {'ACTION': <NormalizationMode.MEAN_STD: 'MEAN_STD'>,
-                                      'STATE': <NormalizationMode.MEAN_STD: 'MEAN_STD'>,
-                                      'VISUAL': <NormalizationMode.MEAN_STD: 'MEAN_STD'>},
-            'optimizer_lr': 1e-05,
-            'optimizer_lr_backbone': 1e-05,
-            'optimizer_weight_decay': 0.0001,
-            'output_features': {'action': {'shape': (6,),
-                                           'type': <FeatureType.ACTION: 'ACTION'>}},
-            'pre_norm': False,
-            'pretrained_backbone_weights': 'ResNet18_Weights.IMAGENET1K_V1',
-            'pretrained_path': 'AmdRamen/mission2_cup',
-            'private': None,
-            'push_to_hub': True,
-            'replace_final_stride_with_dilation': 0,
-            'repo_id': 'AmdRamen/misson2_cup',
-            'tags': None,
-            'temporal_ensemble_coeff': None,
-            'use_amp': False,
-            'use_vae': True,
-            'vision_backbone': 'resnet18'},
- 'resume': False,
- 'robot': {'calibration_dir': None,
-           'cameras': {'side': {'color_mode': <ColorMode.RGB: 'rgb'>,
-                                'fourcc': None,
-                                'fps': 30,
-                                'height': 480,
-                                'index_or_path': 6,
-                                'rotation': <Cv2Rotation.NO_ROTATION: 0>,
-                                'warmup_s': 1,
-                                'width': 640},
-                       'top': {'color_mode': <ColorMode.RGB: 'rgb'>,
-                               'fourcc': None,
-                               'fps': 30,
-                               'height': 480,
-                               'index_or_path': 4,
-                               'rotation': <Cv2Rotation.NO_ROTATION: 0>,
-                               'warmup_s': 1,
-                               'width': 640}},
-           'disable_torque_on_disconnect': True,
-           'id': 'my_awesome_follower_arm',
-           'max_relative_target': None,
-           'port': '/dev/ttyACM1',
-           'use_degrees': False},
- 'teleop': None}
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/bin/lerobot-record", line 7, in <module>
-    sys.exit(main())
-             ^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/scripts/lerobot_record.py", line 516, in main
-    record()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/configs/parser.py", line 233, in wrapper_inner
-    response = fn(cfg, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/scripts/lerobot_record.py", line 379, in record
-    robot = make_robot_from_config(cfg.robot)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/robots/utils.py", line 38, in make_robot_from_config
-    return SO101Follower(config)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/robots/so101_follower/so101_follower.py", line 49, in __init__
-    self.bus = FeetechMotorsBus(
-               ^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lerobot/motors/feetech/feetech.py", line 126, in __init__
-    import scservo_sdk as scs
-ModuleNotFoundError: No module named 'scservo_sdk'
-[manager] Task failed with code 1
-[manager] [camera] Reopening camera after task...
-[manager] [camera] Camera reopened successfully.
-CC^CTraceback (most recent call last):
-  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 308, in <module>
-    TaskManager().run()
-  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 210, in run
-    dets = self.detect_targets(frame)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 125, in detect_targets
-    results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/ultralytics/engine/model.py", line 535, in predict
-    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+# ==========================================
+# ユーザー設定値
+# ==========================================
+# ポート指定（環境に合わせて変更してください）
+ROBOT_PORT = "/dev/ttyACM1"
+ROBOT_TYPE = "so101_follower"
+
+# 指定された初期位置 (Degrees: 度数法)
+# 順番: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
+TARGET_POS_DEG = np.array([14.42, -96.63, 91.40, 74.78, 1.38, 2.26])
+
+def move_to_initial_position(robot, target_deg, duration=3.0):
+    """
+    ロボットを指定された角度へ指定時間をかけて移動させる関数
+    """
+    print(f"Moving to initial position: {target_deg} (degrees)...")
+    
+    # 1. 度数法(Degree) を 弧度法(Radian) に変換
+    # LeRobot/Dynamixelの内部制御はラジアンで行われるため
+    target_rad = np.deg2rad(target_deg)
+    
+    # 2. 現在の関節角度を取得
+    current_rad = robot.follower_arms["main"].read("present_position")
+    
+    # 3. 移動ステップの計算 (線形補間)
+    dt = 0.02  # 制御周期 (20ms)
+    steps = int(duration / dt)
+    
+    # numpyのlinspaceを使って、現在地から目標値までの軌跡を作る
+    # shape: (steps, 6)
+    trajectory = np.linspace(current_rad, target_rad, steps)
+    
+    # 4. ループで順番に指令を送る
+    start_time = time.time()
+    for i in range(steps):
+        # 次のステップの角度を取り出す
+        step_pos = trajectory[i]
+        
+        # ロボットに書き込み
+        robot.follower_arms["main"].write("goal_position", step_pos)
+        
+        # 次の周期まで待機（正確なタイミング制御のため）
+        elapsed = time.time() - start_time
+        expected = (i + 1) * dt
+        if expected > elapsed:
+            time.sleep(expected - elapsed)
+            
+    # 念のため最後に目標値をしっかり書き込む
+    robot.follower_arms["main"].write("goal_position", target_rad)
+    time.sleep(0.5) # 整定待ち
+    print("Movement complete.")
+
+def main():
+    print(f"Connecting to {ROBOT_TYPE} on {ROBOT_PORT}...")
+    
+    # ロボットの初期化と接続
+    robot = make_robot(
+        robot_type=ROBOT_TYPE,
+        overrides={"robot.port": ROBOT_PORT}
+    )
+    
+    try:
+        robot.connect()
+        
+        # 指定した初期位置へ移動を実行
+        move_to_initial_position(robot, TARGET_POS_DEG, duration=4.0)
+        
+        # 確認のため現在の値を表示
+        final_pos = robot.follower_arms["main"].read("present_position")
+        print(f"Final Position (Deg): {np.degrees(final_pos)}")
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+    
+    finally:
+        if robot.is_connected:
+            robot.disconnect()
+            print("Disconnected.")
+
+if __name__ == "__main__":
+    main()
