@@ -128,31 +128,10 @@ class TaskManager:
             except Exception as e:
                 print(f"[manager] [cleanup] Failed to remove {p}: {e}")
 
-    def get_follower_initial_norm_pose(self) -> Dict[str, float]:
-        """Return initial normalized joint positions for SO-101 follower arm.
-
-        Prefer values from config.system.robot_init_pose; fallback to defaults.
-        """
-        if self.robot_init_pose_cfg:
-            return {k: float(v) for k, v in self.robot_init_pose_cfg.items()}
-        # Default pose (NORM values)
-        return {
-            "shoulder_pan.pos": 14.42,
-            "shoulder_lift.pos": -96.63,
-            "elbow_flex.pos": 91.40,
-            "wrist_flex.pos": 74.78,
-            "wrist_roll.pos": 1.38,
-            "gripper.pos": 2.26,
-        }
-
     def apply_initial_pose_if_possible(self):
-        """Best-effort: apply initial pose using Python; fallback to helper script.
-
-        This does not fail the pipeline if libraries or helper are missing.
-        """
-        pose = self.get_follower_initial_norm_pose()
-        print("[manager] [robot] Initial pose (config): " + ", ".join(f"{k}={v}" for k, v in pose.items()))
-        # Sleep before homing
+        """Call homereset via the standalone runner script; log around it."""
+        if self.robot_init_pose_cfg:
+            print("[manager] [robot] Initial pose (config): " + ", ".join(f"{k}={v}" for k, v in self.robot_init_pose_cfg.items()))
         try:
             if self.homing_sleep_before_s > 0:
                 print(f"[manager] [robot] Sleeping {self.homing_sleep_before_s}s before homing...")
@@ -160,26 +139,10 @@ class TaskManager:
         except Exception:
             pass
 
-        # Prefer external homereset.py script if configured or found; fallback to Python API
         applied = self.run_home_reset_script()
         if not applied:
-            applied = self.apply_initial_pose_python(duration_s=self.home_reset_duration_s)
-        if not applied:
-            helper = os.path.join("scripts", "apply_initial_pose.sh")
-            if os.path.isfile(helper) and os.access(helper, os.X_OK):
-                try:
-                    env = os.environ.copy()
-                    env["ROBOT_PORT"] = self.robot_port
-                    env["ROBOT_TYPE"] = os.getenv("ROBOT_TYPE", self.robot_type_default)
-                    env["ROBOT_INIT_POSE"] = ";".join(f"{k}={v}" for k, v in pose.items())
-                    print(f"[manager] [robot] (fallback) Applying initial pose via {helper} ...")
-                    subprocess.run([helper, env.get("ROBOT_TYPE", "so101_follower"), self.robot_port], check=False, env=env)
-                except Exception as e:
-                    print(f"[manager] [robot] Fallback helper failed or not applicable: {e}")
-            else:
-                print("[manager] [robot] No helper script found; skipped application (logged only).")
+            print("[manager] [robot] Homereset runner not available; skipped.")
 
-        # Sleep after homing
         try:
             if self.homing_sleep_after_s > 0:
                 print(f"[manager] [robot] Sleeping {self.homing_sleep_after_s}s after homing...")
@@ -188,168 +151,31 @@ class TaskManager:
             pass
 
     def _build_init_pose_vector_deg(self) -> Optional[List[float]]:
-        """Return ordered joint list in degrees from config.
-
-        Order: shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper.
-        Returns None if any key missing.
-        """
-        pose_map = self.get_follower_initial_norm_pose()
-        keys = [
-            "shoulder_pan.pos",
-            "shoulder_lift.pos",
-            "elbow_flex.pos",
-            "wrist_flex.pos",
-            "wrist_roll.pos",
-            "gripper.pos",
-        ]
-        vals: List[float] = []
-        for k in keys:
-            if k not in pose_map:
-                print(f"[manager] [robot] Missing init pose key: {k}")
-                return None
-            try:
-                vals.append(float(pose_map[k]))
-            except Exception:
-                print(f"[manager] [robot] Invalid init pose value for {k}: {pose_map[k]}")
-                return None
-        return vals
+        """(Deprecated) kept for compatibility; no longer used."""
+        return None
 
     def apply_initial_pose_python(self, duration_s: float = 4.0) -> bool:
-        """Apply initial pose using SO101Follower if available; fallback to factory.
-
-        Reads positions from config (interpreted as degrees), converts to radians,
-        and linearly interpolates to target over duration_s.
-        Returns True if attempted; False to allow fallback.
-        """
-        try:
-            import numpy as np  # type: ignore
-        except Exception as e:
-            print(f"[manager] [robot] numpy not available: {e}")
-            return False
-
-        target_deg = self._build_init_pose_vector_deg()
-        if target_deg is None:
-            return False
-        target_rad = np.deg2rad(np.array(target_deg, dtype=float))
-
-        robot = None
-        robot_type = os.getenv("ROBOT_TYPE", self.robot_type_default)
-
-        # 1) Try direct SO101Follower module (new API)
-        try:
-            print(f"[manager] [robot] Connecting SO101Follower on {self.robot_port}...")
-            from lerobot.robots.so101_follower.so101_follower import SO101Follower  # type: ignore
-            cfg = {"robot": {"port": self.robot_port}}
-            robot = SO101Follower(cfg)
-        except Exception as e:
-            print(f"[manager] [robot] SO101Follower import/init failed: {e}")
-            # 2) Fallback to factory
-            try:
-                from lerobot.common.robot_devices.robots.factory import make_robot  # type: ignore
-                print(f"[manager] [robot] Falling back to make_robot(type={robot_type})...")
-                robot = make_robot(robot_type=robot_type, overrides={"robot.port": self.robot_port})
-            except Exception as e2:
-                print(f"[manager] [robot] make_robot failed: {e2}")
-                return False
-
-        # Connect robot
-        try:
-            robot.connect()
-        except Exception as e:
-            print(f"[manager] [robot] connect() failed: {e}")
-            return False
-
-        # Resolve follower arm handle
-        arm = None
-        try:
-            arm = robot.follower_arms["main"]  # common pattern
-        except Exception:
-            try:
-                arm = getattr(robot, "follower_arm", None)
-            except Exception:
-                arm = None
-        if arm is None:
-            print("[manager] [robot] Could not resolve follower arm handle; aborting homing.")
-            try:
-                if getattr(robot, "is_connected", False):
-                    robot.disconnect()
-            except Exception:
-                pass
-            return False
-
-        # Motion
-        try:
-            try:
-                current_rad = arm.read("present_position")
-            except Exception:
-                current_rad = np.zeros_like(target_rad)
-
-            dt = 0.02
-            steps = max(1, int(duration_s / dt))
-            traj = np.linspace(current_rad, target_rad, steps)
-            print(f"[manager] [robot] Moving to initial pose over {duration_s:.2f}s ({steps} steps)...")
-            start = time.time()
-            for i in range(steps):
-                p = traj[i]
-                try:
-                    arm.write("goal_position", p)
-                except Exception as ie:
-                    print(f"[manager] [robot] write(goal_position) failed at step {i}: {ie}")
-                    break
-                elapsed = time.time() - start
-                expected = (i + 1) * dt
-                if expected > elapsed:
-                    time.sleep(expected - elapsed)
-            try:
-                arm.write("goal_position", target_rad)
-            except Exception:
-                pass
-            time.sleep(0.3)
-            return True
-        finally:
-            try:
-                if getattr(robot, "is_connected", False):
-                    robot.disconnect()
-            except Exception:
-                pass
+        """(Deprecated) no-op to keep compatibility; use homereset.py runner instead."""
+        return False
 
     def run_home_reset_script(self) -> bool:
-        """Invoke external homereset.py using config values, if available.
-
-        Passes robot port, type, target degrees, and duration as CLI args.
-        Returns True if the script was invoked (even if it returns non-zero),
-        False if the script is not configured or missing.
-        """
-        # Resolve script path
-        script = self.home_reset_script or "homereset.py"
-        script_path = script if os.path.isabs(script) else os.path.join(os.getcwd(), script)
-        if not os.path.isfile(script_path):
-            print(f"[manager] [robot] homereset script not found: {script_path}")
+        """Invoke scripts/run_home_reset.py to execute homereset.py using config values."""
+        runner = os.path.join(os.getcwd(), "scripts", "run_home_reset.py")
+        if not os.path.isfile(runner):
+            print(f"[manager] [robot] run_home_reset.py not found: {runner}")
             return False
 
-        # Build args from config
-        target_deg = self._build_init_pose_vector_deg()
-        if target_deg is None:
-            print("[manager] [robot] Init pose vector could not be built; skipping homereset.py")
-            return False
-        deg_str = ",".join(str(v) for v in target_deg)
+        cmd = [sys.executable, runner, "--config", self.config_path]
+        if self.home_reset_script:
+            cmd += ["--script-path", str(self.home_reset_script)]
         robot_type = os.getenv("ROBOT_TYPE", self.robot_type_default)
-
-        cmd = [
-            sys.executable,
-            script_path,
-            "--port", str(self.robot_port),
-            "--type", str(robot_type),
-            "--deg", deg_str,
-            "--duration", str(self.home_reset_duration_s),
-        ]
-        print(f"[manager] [robot] Running homereset.py: {' '.join(cmd)}")
+        cmd += ["--port", str(self.robot_port), "--type", str(robot_type), "--duration", str(self.home_reset_duration_s)]
+        print(f"[manager] [robot] Running: {' '.join(cmd)}")
         try:
-            # We do not fail the pipeline if homereset.py fails; just log it
             subprocess.run(cmd, check=False)
             return True
         except Exception as e:
-            print(f"[manager] [robot] Failed to execute homereset.py: {e}")
+            print(f"[manager] [robot] Failed to execute run_home_reset.py: {e}")
             return False
 
     def open_camera(self) -> cv2.VideoCapture:
