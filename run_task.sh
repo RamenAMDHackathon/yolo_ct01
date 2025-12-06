@@ -41,7 +41,7 @@ LOG_FILE="${LOG_FILE:-task_runs.log}"
 
 if [ "$DRY_RUN" = "1" ] || ! command -v "$CONTROL_BIN" >/dev/null 2>&1; then
   ts=$(date '+%Y-%m-%d %H:%M:%S')
-  msg="[DRY-RUN ${ts}] ${CONTROL_BIN} --robot.type=${ROBOT_TYPE} --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --fps ${FPS} --robot.id=${ROBOT_ID} --robot.cameras=\"${ROBOT_CAMERAS}\" --dataset.single_task=\"${DATASET_SINGLE_TASK}\" --dataset.repo_id=${DATASET_REPO_ID} --dataset.root=${DATASET_ROOT} --dataset.episode_time_s=${DATASET_EPISODE_TIME_S} --dataset.num_episodes=${DATASET_NUM_EPISODES} --dataset.push_to_hub=${DATASET_PUSH_TO_HUB} (for ${DURATION}s)"
+  msg="[DRY-RUN ${ts}] ${CONTROL_BIN} --robot.type=${ROBOT_TYPE} --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --dataset.fps ${FPS} --robot.id=${ROBOT_ID} --robot.cameras=\"${ROBOT_CAMERAS}\" --dataset.single_task=\"${DATASET_SINGLE_TASK}\" --dataset.repo_id=${DATASET_REPO_ID} --dataset.root=${DATASET_ROOT} --dataset.episode_time_s=${DATASET_EPISODE_TIME_S} --dataset.num_episodes=${DATASET_NUM_EPISODES} --dataset.push_to_hub=${DATASET_PUSH_TO_HUB} (for ${DURATION}s)"
   echo "$msg" >&2
   # Append to log file for confirmation
   {
@@ -57,6 +57,7 @@ if [ -n "${TIMEOUT_BIN}" ]; then
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
+    --dataset.fps "${FPS}" \
     --robot.id="${ROBOT_ID}" \
     --robot.cameras="${ROBOT_CAMERAS}" \
     --dataset.single_task="${DATASET_SINGLE_TASK}" \
@@ -70,7 +71,8 @@ else
   "${CONTROL_BIN}" \
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
-    --policy.path="${POLICY_PATH}" \や manager.py のようなもの）の中で、以下のように cap.release() を挟んでください。
+    --policy.path="${POLICY_PATH}" \
+    --dataset.fps "${FPS}" \
     --robot.id="${ROBOT_ID}" \
     --robot.cameras="${ROBOT_CAMERAS}" \
     --dataset.single_task="${DATASET_SINGLE_TASK}" \

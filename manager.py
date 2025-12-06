@@ -254,17 +254,28 @@ class TaskManager:
                                 policy_path = task.policy_path
                                 duration = task.duration
                                 ts = time.strftime("%Y-%m-%d %H:%M:%S")
-                                if self.dry_run:
-                                    dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} --fps 30 {extra_args} (for {duration}s)"
-                                    print(dry_msg)
-                                    try:
-                                        with open(self.log_file, "a") as f:
-                                            f.write(dry_msg + "\n")
-                                    except Exception:
-                                        pass
-                                else:
-                                    print(f"[manager] Executing '{cls_name}': {policy_path} for {duration}s")
-                                    try:
+                                # コマンド生成前に必ずカメラを解放（validate / production 共通）
+                                print("[manager] [camera] Releasing camera before task generation...")
+                                try:
+                                    cap.release()
+                                    cv2.destroyAllWindows()
+                                except Exception:
+                                    pass
+                                time.sleep(0.3)
+                                print("[manager] [camera] Camera released.")
+
+                                try:
+                                    if self.dry_run:
+                                        # 検証モードでもカメラ解放後にコマンドを生成（ログ出力）
+                                        dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} {extra_args} (for {duration}s)"
+                                        print(dry_msg)
+                                        try:
+                                            with open(self.log_file, "a") as f:
+                                                f.write(dry_msg + "\n")
+                                        except Exception:
+                                            pass
+                                    else:
+                                        print(f"[manager] Executing '{cls_name}': {policy_path} for {duration}s")
                                         env = os.environ.copy()
                                         env.pop("DRY_RUN", None)
                                         env.pop("LOG_FILE", None)
@@ -272,10 +283,21 @@ class TaskManager:
                                         env["ROBOT_TYPE"] = robot_type
                                         env["EXTRA_ARGS"] = extra_args
                                         subprocess.run(["bash", "run_task.sh", policy_path, robot_port, str(duration)], check=True, env=env)
-                                    except subprocess.CalledProcessError as e:
-                                        print(f"[manager] Task failed with code {e.returncode}")
-                                    except FileNotFoundError:
-                                        print("[manager] run_task.sh not found. Ensure it is present and executable.")
+                                except subprocess.CalledProcessError as e:
+                                    print(f"[manager] Task failed with code {e.returncode}")
+                                except FileNotFoundError:
+                                    print("[manager] run_task.sh not found. Ensure it is present and executable.")
+                                finally:
+                                    # タスク生成/実行後はカメラ再オープン（共通）
+                                    print("[manager] [camera] Reopening camera after task...")
+                                    try:
+                                        cap = self.open_camera()
+                                        if cap is not None and cap.isOpened():
+                                            print("[manager] [camera] Camera reopened successfully.")
+                                        else:
+                                            print("[manager] [camera] Failed to reopen camera; will retry.")
+                                    except Exception:
+                                        print("[manager] [camera] Exception while reopening camera; will retry.")
 
             # Close and reopen camera on next loop
             cap.release()
