@@ -1,4 +1,6 @@
 import os
+import glob
+import shutil
 import time
 import platform
 import subprocess
@@ -91,6 +93,30 @@ class TaskManager:
     def _load_config(self) -> dict:
         with open(self.config_path, "r") as f:
             return yaml.safe_load(f) or {}
+
+    def cleanup_eval_outputs(self):
+        """Remove previous evaluation outputs to avoid collisions before task generation.
+
+        Deletes paths matching /home/amddemo/hackathon_ramen/outputs/eval_*
+        (both files and directories). Errors are logged but ignored.
+        """
+        pattern = "/home/amddemo/hackathon_ramen/outputs/eval_*"
+        print(f"[manager] [cleanup] Removing previous outputs matching: {pattern}")
+        paths = sorted(glob.glob(pattern))
+        if not paths:
+            print("[manager] [cleanup] No prior outputs to remove.")
+            return
+        for p in paths:
+            try:
+                if os.path.isdir(p):
+                    shutil.rmtree(p, ignore_errors=True)
+                    # shutil.rmtree with ignore_errors does not raise; still log action
+                    print(f"[manager] [cleanup] Removed dir: {p}")
+                else:
+                    os.remove(p)
+                    print(f"[manager] [cleanup] Removed file: {p}")
+            except Exception as e:
+                print(f"[manager] [cleanup] Failed to remove {p}: {e}")
 
     def open_camera(self) -> cv2.VideoCapture:
         cap = cv2.VideoCapture(self.camera_index)
@@ -263,6 +289,9 @@ class TaskManager:
                                     pass
                                 time.sleep(0.3)
                                 print("[manager] [camera] Camera released.")
+
+                                # 事前クリーンアップ: 過去の評価出力を削除
+                                self.cleanup_eval_outputs()
 
                                 try:
                                     if self.dry_run:

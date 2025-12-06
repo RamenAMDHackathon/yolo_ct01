@@ -1,5 +1,5 @@
 system:
-  camera_index: 0
+  camera_index: 4
   # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
   robot_port: "/dev/ttyACM1"
   # 実行モード: validate(検証・ドライラン) / production(本番・実行)
