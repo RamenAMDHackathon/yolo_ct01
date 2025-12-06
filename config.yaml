@@ -13,6 +13,19 @@ system:
   robot_type: "so101_follower"
   extra_args: "--robot.id=my_awesome_follower_arm --robot.cameras=\"{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}\" --dataset.single_task=\"put the pen in the white square\" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false"
 
+  # ホームポジション適用時のスリープ（秒）
+  homing_sleep_before_s: 2
+  homing_sleep_after_s: 2
+
+  # フォロワーアームの初期位置（NORM 単位）
+  robot_init_pose:
+    shoulder_pan.pos: 14.42
+    shoulder_lift.pos: -96.63
+    elbow_flex.pos: 91.40
+    wrist_flex.pos: 74.78
+    wrist_roll.pos: 1.38
+    gripper.pos: 2.26
+
 # YOLOの推論設定（検証時の可視化/感度調整に使用）
 yolo:
   weights: "yolov8n.pt"   # 必要に応じて yolov8s.pt などへ変更

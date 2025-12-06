@@ -65,8 +65,8 @@ if [ -n "${TIMEOUT_BIN}" ]; then
     --dataset.root="${DATASET_ROOT}" \
     --dataset.episode_time_s="${DATASET_EPISODE_TIME_S}" \
     --dataset.num_episodes="${DATASET_NUM_EPISODES}" \
-    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"\
-    --dataset.resume=true
+    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"
+
 else
   echo "[WARN] timeout command not available; running without enforced duration" >&2
   "${CONTROL_BIN}" \
@@ -81,6 +81,5 @@ else
     --dataset.root="${DATASET_ROOT}" \
     --dataset.episode_time_s="${DATASET_EPISODE_TIME_S}" \
     --dataset.num_episodes="${DATASET_NUM_EPISODES}" \
-    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"\
-    --dataset.resume=true
+    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"
 fi

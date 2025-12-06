@@ -61,6 +61,11 @@ class TaskManager:
         self.imgsz = int(os.getenv("IMGSZ", yolo_cfg.get("imgsz", 640)))
         self.draw_all = str(os.getenv("DRAW_ALL", str(yolo_cfg.get("draw_all", self.run_mode == "validate"))).lower()) in ("1","true","yes")
 
+        # Homing/initial pose config
+        self.homing_sleep_before_s: int = int(system_cfg.get("homing_sleep_before_s", 2))
+        self.homing_sleep_after_s: int = int(system_cfg.get("homing_sleep_after_s", 2))
+        self.robot_init_pose_cfg: Dict[str, float] = dict(system_cfg.get("robot_init_pose", {}))
+
         self.targets: Dict[str, TargetTask] = {
             k: TargetTask(
                 policy_path=str(v.get("policy_path")),
@@ -117,6 +122,59 @@ class TaskManager:
                     print(f"[manager] [cleanup] Removed file: {p}")
             except Exception as e:
                 print(f"[manager] [cleanup] Failed to remove {p}: {e}")
+
+    def get_follower_initial_norm_pose(self) -> Dict[str, float]:
+        """Return initial normalized joint positions for SO-101 follower arm.
+
+        Prefer values from config.system.robot_init_pose; fallback to defaults.
+        """
+        if self.robot_init_pose_cfg:
+            return {k: float(v) for k, v in self.robot_init_pose_cfg.items()}
+        # Default pose (NORM values)
+        return {
+            "shoulder_pan.pos": 14.42,
+            "shoulder_lift.pos": -96.63,
+            "elbow_flex.pos": 91.40,
+            "wrist_flex.pos": 74.78,
+            "wrist_roll.pos": 1.38,
+            "gripper.pos": 2.26,
+        }
+
+    def apply_initial_pose_if_possible(self):
+        """Best-effort: log initial pose and call optional script if present.
+
+        This does not fail the pipeline if the helper is missing.
+        """
+        pose = self.get_follower_initial_norm_pose()
+        print("[manager] [robot] Initial pose (norm): " + ", ".join(f"{k}={v}" for k, v in pose.items()))
+        # Sleep before homing
+        try:
+            if self.homing_sleep_before_s > 0:
+                print(f"[manager] [robot] Sleeping {self.homing_sleep_before_s}s before homing...")
+                time.sleep(self.homing_sleep_before_s)
+        except Exception:
+            pass
+        helper = os.path.join("scripts", "apply_initial_pose.sh")
+        if os.path.isfile(helper) and os.access(helper, os.X_OK):
+            try:
+                env = os.environ.copy()
+                env["ROBOT_PORT"] = self.robot_port
+                env["ROBOT_TYPE"] = os.getenv("ROBOT_TYPE", self.robot_type_default)
+                # Provide pose via env for the helper if it wants to use it
+                env["ROBOT_INIT_POSE"] = ";".join(f"{k}={v}" for k, v in pose.items())
+                print(f"[manager] [robot] Applying initial pose via {helper} ...")
+                subprocess.run([helper, env.get("ROBOT_TYPE", "so101_follower"), self.robot_port], check=False, env=env)
+            except Exception as e:
+                print(f"[manager] [robot] Initial pose helper failed or not applicable: {e}")
+        else:
+            print("[manager] [robot] No helper script found; skipping actual application (logged only).")
+        # Sleep after homing
+        try:
+            if self.homing_sleep_after_s > 0:
+                print(f"[manager] [robot] Sleeping {self.homing_sleep_after_s}s after homing...")
+                time.sleep(self.homing_sleep_after_s)
+        except Exception:
+            pass
 
     def open_camera(self) -> cv2.VideoCapture:
         cap = cv2.VideoCapture(self.camera_index)
@@ -292,6 +350,8 @@ class TaskManager:
 
                                 # 事前クリーンアップ: 過去の評価出力を削除
                                 self.cleanup_eval_outputs()
+                                # 初期姿勢の適用（ベストエフォート）
+                                self.apply_initial_pose_if_possible()
 
                                 try:
                                     if self.dry_run:
