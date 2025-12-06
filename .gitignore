@@ -1,0 +1,90 @@
+# ---- Python bytecode / cache ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---- Packaging / build artifacts ----
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---- Test / coverage caches ----
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- Type checker / linters cache ----
+.mypy_cache/
+.pytype/
+.pyright/
+.ruff_cache/
+.cache/
+
+# ---- Editors / OS files ----
+.DS_Store
+.idea/
+.vscode/
+*.code-workspace
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- Logs / temp ----
+*.log
+logs/
+log/
+tmp/
+temp/
+
+# ---- Data / outputs (DL workflows) ----
+data/
+datasets/
+outputs/
+results/
+runs/
+wandb/
+checkpoints/
+
+# ---- Model & large binary weights ----
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.pb
+*.weights
+
+# Keep the currently used small model if desired
+!yolov8n.pt
+
+# ---- Media (often large) ----
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tif
+*.tiff
+
+# ---- Local config overrides / secrets ----
+config.local.yaml
+.env
+.env.*
+*.secret.*

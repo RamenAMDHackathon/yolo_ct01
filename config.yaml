@@ -1,0 +1,36 @@
+system:
+  camera_index: 0
+  # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
+  robot_port: "/dev/ttyACM0"
+  # 実行モード: validate(検証・ドライラン) / production(本番・実行)
+  mode: "validate"
+  # mode: "production"
+
+  # ドライラン時にコマンドを追記するログファイル
+  log_file: "task_runs.log"
+
+# YOLOの推論設定（検証時の可視化/感度調整に使用）
+yolo:
+  weights: "yolov8n.pt"   # 必要に応じて yolov8s.pt などへ変更
+  conf: 0.35              # 低めに設定して検出しやすく（誤検出が多ければ上げる）
+  imgsz: 640              # 入力解像度（小物・俯瞰なら 960~1280 も検討）
+  draw_all: true          # ターゲット以外も可視化（検証用）
+
+# YOLOのクラス名をキーに、それぞれのロボット実行設定を記述
+targets:
+  bottle:
+    policy_path: "user/so100_bottle_policy"
+    task_text: "Pick up the bottle and place it in recycle bin"
+    duration: 15
+  cup:
+    policy_path: "user/so100_cup_policy"
+    task_text: "Pick the cup and place in burnable bin"
+    duration: 12
+  banana:
+    policy_path: "user/so100_pen_policy"
+    task_text: "Pick the pen and place in burnable bin"
+    duration: 10
+  apple:
+    policy_path: "user/so100_apple_policy"
+    task_text: "Pick apple for compost"
+    duration: 10
