@@ -15,8 +15,17 @@ DURATION="$3"
 # ROBOT_TYPE defaults to so101_follower to match user's setup
 CONTROL_BIN="${CONTROL_BIN:-lerobot-record}"
 ROBOT_TYPE="${ROBOT_TYPE:-so101_follower}"
-# Optional extra arguments to pass through (e.g., cameras/dataset flags for lerobot-record)
-EXTRA_ARGS=${EXTRA_ARGS:-}
+# Fixed arguments embedded to avoid shell word-splitting issues
+# These replace complex values that previously came via EXTRA_ARGS
+FPS="30"
+ROBOT_ID="my_awesome_follower_arm"
+ROBOT_CAMERAS='{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}'
+DATASET_SINGLE_TASK='put the pen in the white square'
+DATASET_REPO_ID='AmdRamen/eval_mission_1'
+DATASET_ROOT='/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/'
+DATASET_EPISODE_TIME_S='20'
+DATASET_NUM_EPISODES='5'
+DATASET_PUSH_TO_HUB='false'
 
 # Prefer GNU timeout if available. On macOS it may be gtimeout (brew install coreutils)
 TIMEOUT_BIN=""
@@ -32,7 +41,7 @@ LOG_FILE="${LOG_FILE:-task_runs.log}"
 
 if [ "$DRY_RUN" = "1" ] || ! command -v "$CONTROL_BIN" >/dev/null 2>&1; then
   ts=$(date '+%Y-%m-%d %H:%M:%S')
-  msg="[DRY-RUN ${ts}] ${CONTROL_BIN} --robot.type=${ROBOT_TYPE} --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --fps 30 ${EXTRA_ARGS} (for ${DURATION}s)"
+  msg="[DRY-RUN ${ts}] ${CONTROL_BIN} --robot.type=${ROBOT_TYPE} --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --fps ${FPS} --robot.id=${ROBOT_ID} --robot.cameras=\"${ROBOT_CAMERAS}\" --dataset.single_task=\"${DATASET_SINGLE_TASK}\" --dataset.repo_id=${DATASET_REPO_ID} --dataset.root=${DATASET_ROOT} --dataset.episode_time_s=${DATASET_EPISODE_TIME_S} --dataset.num_episodes=${DATASET_NUM_EPISODES} --dataset.push_to_hub=${DATASET_PUSH_TO_HUB} (for ${DURATION}s)"
   echo "$msg" >&2
   # Append to log file for confirmation
   {
@@ -48,14 +57,28 @@ if [ -n "${TIMEOUT_BIN}" ]; then
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
-    --fps 30 \
-    ${EXTRA_ARGS}
+    --fps "${FPS}" \
+    --robot.id="${ROBOT_ID}" \
+    --robot.cameras="${ROBOT_CAMERAS}" \
+    --dataset.single_task="${DATASET_SINGLE_TASK}" \
+    --dataset.repo_id="${DATASET_REPO_ID}" \
+    --dataset.root="${DATASET_ROOT}" \
+    --dataset.episode_time_s="${DATASET_EPISODE_TIME_S}" \
+    --dataset.num_episodes="${DATASET_NUM_EPISODES}" \
+    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"
 else
   echo "[WARN] timeout command not available; running without enforced duration" >&2
   "${CONTROL_BIN}" \
     --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
-    --fps 30 \
-    ${EXTRA_ARGS}
+    --fps "${FPS}" \
+    --robot.id="${ROBOT_ID}" \
+    --robot.cameras="${ROBOT_CAMERAS}" \
+    --dataset.single_task="${DATASET_SINGLE_TASK}" \
+    --dataset.repo_id="${DATASET_REPO_ID}" \
+    --dataset.root="${DATASET_ROOT}" \
+    --dataset.episode_time_s="${DATASET_EPISODE_TIME_S}" \
+    --dataset.num_episodes="${DATASET_NUM_EPISODES}" \
+    --dataset.push_to_hub="${DATASET_PUSH_TO_HUB}"
 fi
