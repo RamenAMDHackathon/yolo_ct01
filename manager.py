@@ -54,6 +54,7 @@ class TaskManager:
         # Command defaults (overridable by env)
         self.control_bin_default: str = str(system_cfg.get("control_bin", os.getenv("CONTROL_BIN", "lerobot-record")))
         self.robot_type_default: str = str(system_cfg.get("robot_type", os.getenv("ROBOT_TYPE", "so101_follower")))
+        self.robot_id_default: str = str(system_cfg.get("robot_id", os.getenv("ROBOT_ID", "my_awesome_follower_arm")))
         self.extra_args_default: str = str(system_cfg.get("extra_args", os.getenv("EXTRA_ARGS", "")))
 
         # YOLO settings (config > env override > defaults)
@@ -545,6 +546,7 @@ class TaskManager:
                                         env.pop("LOG_FILE", None)
                                         env["CONTROL_BIN"] = control_bin
                                         env["ROBOT_TYPE"] = robot_type
+                                        env["ROBOT_ID"] = self.robot_id_default
                                         env["EXTRA_ARGS"] = extra_args
                                         subprocess.run(["bash", "run_task.sh", policy_path, robot_port, str(duration)], check=True, env=env)
                                 except subprocess.CalledProcessError as e:

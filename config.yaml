@@ -11,6 +11,7 @@ system:
   # 既定の実行バイナリ/タイプ/追加引数（環境変数で上書き可）
   control_bin: "lerobot-record"
   robot_type: "so101_follower"
+  robot_id: "my_awesome_follower_arm"
   extra_args: "--robot.id=my_awesome_follower_arm --robot.cameras=\"{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}\" --dataset.single_task=\"put the pen in the white square\" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false"
 
   # ホームポジション適用時のスリープ（秒）

@@ -18,7 +18,8 @@ ROBOT_TYPE="${ROBOT_TYPE:-so101_follower}"
 # Fixed arguments embedded to avoid shell word-splitting issues
 # These replace complex values that previously came via EXTRA_ARGS
 FPS="30"
-ROBOT_ID="my_awesome_follower_arm"
+# Allow overriding ROBOT_ID via environment, default remains my_awesome_follower_arm
+ROBOT_ID="${ROBOT_ID:-my_awesome_follower_arm}"
 ROBOT_CAMERAS='{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}'
 DATASET_SINGLE_TASK='put the pen in the white square'
 DATASET_REPO_ID='AmdRamen/eval_mission_1'
