@@ -21,7 +21,8 @@ FPS="30"
 # Allow overriding ROBOT_ID via environment, default remains my_awesome_follower_arm
 ROBOT_ID="${ROBOT_ID:-my_awesome_follower_arm}"
 ROBOT_CAMERAS='{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}'
-DATASET_SINGLE_TASK='put the pen in the white square'
+# Allow overriding single task via environment; default keeps prior text
+DATASET_SINGLE_TASK="${DATASET_SINGLE_TASK:-put the pen in the white square}"
 DATASET_REPO_ID='AmdRamen/eval_mission_1'
 DATASET_ROOT='/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/'
 DATASET_EPISODE_TIME_S='20'

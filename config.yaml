@@ -1,5 +1,5 @@
 system:
-  camera_index: 4
+  camera_index: 0
   # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
   robot_port: "/dev/ttyACM1"
   # 実行モード: validate(検証・ドライラン) / production(本番・実行)
@@ -43,9 +43,9 @@ yolo:
 targets:
   bottle:
     policy_path: "AmdRamen/mission2_bottle"
-    task_text: "Pick up the bottle and place it in recycle bin"
+    task_text: "put a paper bottle in a trash bag"
     duration: 20
   cup:
     policy_path: "AmdRamen/mission2_cup"
-    task_text: "Pick the cup and place in burnable bin"
+    task_text: "put a paper cup in a trash bag"
     duration: 20

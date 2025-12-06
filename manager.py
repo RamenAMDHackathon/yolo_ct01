@@ -358,7 +358,9 @@ class TaskManager:
                                 try:
                                     if self.dry_run:
                                         # 検証モードでもカメラ解放後にコマンドを生成（ログ出力）
-                                        dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} {extra_args} (for {duration}s)"
+                                        # 動的なタスク文言を反映
+                                        single_task = (task.task_text or "").strip()
+                                        dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} --dataset.single_task=\"{single_task}\" (for {duration}s)"
                                         print(dry_msg)
                                         try:
                                             with open(self.log_file, "a") as f:
@@ -372,6 +374,8 @@ class TaskManager:
                                         env.pop("LOG_FILE", None)
                                         env["CONTROL_BIN"] = control_bin
                                         env["ROBOT_TYPE"] = robot_type
+                                        # Pass dynamic single_task for run_task.sh
+                                        env["DATASET_SINGLE_TASK"] = (task.task_text or "").strip()
                                         env["ROBOT_ID"] = self.robot_id_default
                                         env["EXTRA_ARGS"] = extra_args
                                         subprocess.run(["bash", "run_task.sh", policy_path, robot_port, str(duration)], check=True, env=env)
