@@ -1,13 +1,17 @@
 system:
   camera_index: 0
   # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
-  robot_port: "/dev/ttyACM0"
+  robot_port: "/dev/ttyACM1"
   # 実行モード: validate(検証・ドライラン) / production(本番・実行)
   mode: "validate"
   # mode: "production"
 
   # ドライラン時にコマンドを追記するログファイル
   log_file: "task_runs.log"
+  # 既定の実行バイナリ/タイプ/追加引数（環境変数で上書き可）
+  control_bin: "lerobot-record"
+  robot_type: "so101_follower"
+  extra_args: "--robot.id=my_awesome_follower_arm --robot.cameras=\"{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}\" --dataset.single_task=\"put the pen in the white square\" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false"
 
 # YOLOの推論設定（検証時の可視化/感度調整に使用）
 yolo:
@@ -19,18 +23,10 @@ yolo:
 # YOLOのクラス名をキーに、それぞれのロボット実行設定を記述
 targets:
   bottle:
-    policy_path: "user/so100_bottle_policy"
+    policy_path: "AmdRamen/mission2_bottle"
     task_text: "Pick up the bottle and place it in recycle bin"
-    duration: 15
+    duration: 20
   cup:
-    policy_path: "user/so100_cup_policy"
+    policy_path: "AmdRamen/mission2_cup"
     task_text: "Pick the cup and place in burnable bin"
-    duration: 12
-  banana:
-    policy_path: "user/so100_pen_policy"
-    task_text: "Pick the pen and place in burnable bin"
-    duration: 10
-  apple:
-    policy_path: "user/so100_apple_policy"
-    task_text: "Pick apple for compost"
-    duration: 10
+    duration: 20

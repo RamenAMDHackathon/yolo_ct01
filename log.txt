@@ -1,0 +1,20 @@
+
+keisukeotani@KeisukenoMac-mini yolo_test % 
+keisukeotani@KeisukenoMac-mini yolo_test %  CONF=0.5 RUN_MODE=validate .venv/bin/python manager.py
+[manager] Loading YOLO weights: yolov8n.pt
+[manager] device=mps, camera_index=0, robot_port=/dev/ttyACM1, mode=validate
+2025-12-06 16:49:06.101 Python[20699:178207] WARNING: AVCaptureDeviceTypeExternal is deprecated for Continuity Cameras. Please use AVCaptureDeviceTypeContinuityCamera and add NSCameraUseContinuityCameraDeviceType to your Info.plist.
+[manager] Monitoring. 20s ticker; only cup/bottle logs. Press 'q' to quit.
+[manager] [tick] queue=['cup', 'bottle']
+[DRY-RUN 2025-12-06 16:49:08] lerobot-record --robot.type=so101_follower --robot.port=/dev/ttyACM1 --policy.path=AmdRamen/misson2_cup --fps 30 --robot.id=my_awesome_follower_arm --robot.cameras="{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}" --dataset.single_task="put the pen in the white square" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false (for 12s)
+[manager] [tick] queue=['bottle', 'cup']
+[DRY-RUN 2025-12-06 16:49:26] lerobot-record --robot.type=so101_follower --robot.port=/dev/ttyACM1 --policy.path=AmdRamen/misshon2_bottle --fps 30 --robot.id=my_awesome_follower_arm --robot.cameras="{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}" --dataset.single_task="put the pen in the white square" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false (for 15s)
+^CTraceback (most recent call last):
+  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 286, in <module>
+    TaskManager().run()
+  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 215, in run
+    all_dets = self.detect_all(frame)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/keisukeotani/Documents/matsuodev/202512AMDhakkason/yolo_test/manager.py", line 147, in detect_all
+    results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

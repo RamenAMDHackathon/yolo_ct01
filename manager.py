@@ -41,12 +41,17 @@ class TaskManager:
         yolo_cfg = self.cfg.get("yolo", {}) or {}
         self.camera_index: int = int(system_cfg.get("camera_index", 0))
         # Environment variable ROBOT_PORT can override config
-        self.robot_port: str = os.getenv("ROBOT_PORT", system_cfg.get("robot_port", "/dev/ttyACM0"))
+        self.robot_port: str = os.getenv("ROBOT_PORT", system_cfg.get("robot_port", "/dev/ttyACM1"))
         # Mode selection: validate (dry-run) or production
         # Priority: ENV RUN_MODE -> config.system.mode
         self.run_mode: str = os.getenv("RUN_MODE", str(system_cfg.get("mode", "validate"))).lower()
         self.dry_run: bool = self.run_mode != "production"
         self.log_file: str = str(system_cfg.get("log_file", "task_runs.log"))
+
+        # Command defaults (overridable by env)
+        self.control_bin_default: str = str(system_cfg.get("control_bin", os.getenv("CONTROL_BIN", "lerobot-record")))
+        self.robot_type_default: str = str(system_cfg.get("robot_type", os.getenv("ROBOT_TYPE", "so101_follower")))
+        self.extra_args_default: str = str(system_cfg.get("extra_args", os.getenv("EXTRA_ARGS", "")))
 
         # YOLO settings (config > env override > defaults)
         self.weights = os.getenv("WEIGHTS", str(yolo_cfg.get("weights", self.weights)))
@@ -177,6 +182,8 @@ class TaskManager:
 
     def run(self):
         print(f"[manager] device={self.device}, camera_index={self.camera_index}, robot_port={self.robot_port}, mode={self.run_mode}")
+        interval_s = int(os.getenv("TASK_INTERVAL_S", "20"))
+        allowed = {k for k in self.targets.keys() if k in ("cup", "bottle")}
         while True:
             cap = self.open_camera()
             if not cap.isOpened():
@@ -184,50 +191,40 @@ class TaskManager:
                 time.sleep(2)
                 continue
 
-            print("[manager] Monitoring camera. Press 'q' to quit.")
-            matched: Optional[str] = None
+            print(f"[manager] Monitoring. 20s ticker; only cup/bottle logs. Press 'q' to quit.")
+            recognized_order: List[str] = []
+            recognized_set = set()
+            start_time = time.time()
+            next_tick = start_time  # align ticks to 0s, 20s, 40s from start
+
             while True:
                 ret, frame = cap.read()
                 if not ret or frame is None:
                     print("[manager] Failed to read frame. Reopening camera...")
                     break
 
-                self.draw_frame_with_status(frame, "Monitoring... (press q to quit)")
+                remain = max(0, interval_s - int(time.time() - ((next_tick - interval_s) if next_tick > start_time else start_time)))
+                self.draw_frame_with_status(frame, f"Monitoring... next tick in {remain}s (q: quit)")
 
                 # Detect configured targets
                 dets = self.detect_targets(frame)
 
                 # In debug mode, also draw all detections (yellow) to verify YOLO works
+                # Optional drawing of all detections; suppress console spam
                 if self.draw_all:
                     all_dets = self.detect_all(frame)
                     if all_dets:
-                        print(f"[manager] YOLO detections: {len(all_dets)} -> {[d[0] for d in all_dets[:5]]}{'...' if len(all_dets)>5 else ''}")
                         self.draw_bboxes(frame, all_dets, color=(0, 255, 255))  # yellow for all
 
                 if dets:
-                    # Log target detections to stdout
-                    for cls_name, conf, (x1, y1, x2, y2) in dets:
-                        print(f"[manager] Detected target: {cls_name} conf={conf:.2f} bbox=({x1},{y1},{x2},{y2})")
-                    matched = dets[0][0]  # choose first target class
-
-                    # Draw target boxes in green
+                    # Draw and update queue for cup/bottle only
                     self.draw_bboxes(frame, dets, color=(0, 255, 0))
-                    cv2.putText(frame, f"Target detected: {matched}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
-                    cv2.imshow("Manager", frame)
-                    cv2.waitKey(1)
-                    time.sleep(1.0)
-                    break
+                    for cls_name, conf, (x1, y1, x2, y2) in dets:
+                        if cls_name in allowed and cls_name not in recognized_set:
+                            recognized_set.add(cls_name)
+                            recognized_order.append(cls_name)
 
-                if not dets and self.draw_all:
-                    # If no targets but have general detections, still show the frame
-                    cv2.imshow("Manager", frame)
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('q'):
-                        cap.release()
-                        cv2.destroyAllWindows()
-                        return
-                    continue
-
+                # Show frame and handle quit
                 cv2.imshow("Manager", frame)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
@@ -235,37 +232,54 @@ class TaskManager:
                     cv2.destroyAllWindows()
                     return
 
-            # Close camera before launching robot task (to avoid device contention)
+                # Flush tasks every interval
+                now = time.time()
+                if now >= next_tick:
+                    # Process at aligned tick (0,20,40s from start). Handle time drift by advancing in steps.
+                    while next_tick <= now:
+                        next_tick += interval_s
+                    if recognized_order:
+                        # Pop exactly one command per tick
+                        print(f"[manager] [tick] queue={recognized_order}")
+                        cls_name = recognized_order.pop(0)
+                        if cls_name in recognized_set:
+                            recognized_set.remove(cls_name)
+                        if cls_name in allowed:
+                            robot_port = self.robot_port
+                            control_bin = os.getenv("CONTROL_BIN", self.control_bin_default)
+                            robot_type = os.getenv("ROBOT_TYPE", self.robot_type_default)
+                            extra_args = os.getenv("EXTRA_ARGS", self.extra_args_default).strip()
+                            task = self.targets.get(cls_name)
+                            if task:
+                                policy_path = task.policy_path
+                                duration = task.duration
+                                ts = time.strftime("%Y-%m-%d %H:%M:%S")
+                                if self.dry_run:
+                                    dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} --fps 30 {extra_args} (for {duration}s)"
+                                    print(dry_msg)
+                                    try:
+                                        with open(self.log_file, "a") as f:
+                                            f.write(dry_msg + "\n")
+                                    except Exception:
+                                        pass
+                                else:
+                                    print(f"[manager] Executing '{cls_name}': {policy_path} for {duration}s")
+                                    try:
+                                        env = os.environ.copy()
+                                        env.pop("DRY_RUN", None)
+                                        env.pop("LOG_FILE", None)
+                                        env["CONTROL_BIN"] = control_bin
+                                        env["ROBOT_TYPE"] = robot_type
+                                        env["EXTRA_ARGS"] = extra_args
+                                        subprocess.run(["bash", "run_task.sh", policy_path, robot_port, str(duration)], check=True, env=env)
+                                    except subprocess.CalledProcessError as e:
+                                        print(f"[manager] Task failed with code {e.returncode}")
+                                    except FileNotFoundError:
+                                        print("[manager] run_task.sh not found. Ensure it is present and executable.")
+
+            # Close and reopen camera on next loop
             cap.release()
             cv2.destroyAllWindows()
-
-            if matched is None:
-                # reopen camera loop
-                continue
-
-            # Run associated task
-            task = self.targets[matched]
-            policy_path = task.policy_path
-            duration = task.duration
-            robot_port = self.robot_port
-
-            print(f"[manager] Executing task for '{matched}': policy={policy_path}, port={robot_port}, duration={duration}s")
-            try:
-                env = os.environ.copy()
-                # In validate mode (mac mini), force dry-run and set log file
-                if self.dry_run:
-                    env["DRY_RUN"] = "1"
-                    env["LOG_FILE"] = self.log_file
-                # Use bash to ensure script is executed properly
-                subprocess.run([
-                    "bash", "run_task.sh", policy_path, robot_port, str(duration)
-                ], check=True, env=env)
-            except subprocess.CalledProcessError as e:
-                print(f"[manager] Task failed with code {e.returncode}")
-            except FileNotFoundError:
-                print("[manager] run_task.sh not found. Ensure it is present and executable.")
-
-            # After completion, loop continues to reopen the camera
 
 
 if __name__ == "__main__":

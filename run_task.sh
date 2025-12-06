@@ -10,6 +10,14 @@ POLICY_PATH="$1"
 ROBOT_PORT="$2"
 DURATION="$3"
 
+# Allow overriding control binary and robot type via env
+# CONTROL_BIN=lerobot-control|lerobot-record (default: lerobot-record)
+# ROBOT_TYPE defaults to so101_follower to match user's setup
+CONTROL_BIN="${CONTROL_BIN:-lerobot-record}"
+ROBOT_TYPE="${ROBOT_TYPE:-so101_follower}"
+# Optional extra arguments to pass through (e.g., cameras/dataset flags for lerobot-record)
+EXTRA_ARGS=${EXTRA_ARGS:-}
+
 # Prefer GNU timeout if available. On macOS it may be gtimeout (brew install coreutils)
 TIMEOUT_BIN=""
 if command -v timeout >/dev/null 2>&1; then
@@ -22,9 +30,9 @@ fi
 DRY_RUN="${DRY_RUN:-0}"
 LOG_FILE="${LOG_FILE:-task_runs.log}"
 
-if [ "$DRY_RUN" = "1" ] || ! command -v lerobot-control >/dev/null 2>&1; then
+if [ "$DRY_RUN" = "1" ] || ! command -v "$CONTROL_BIN" >/dev/null 2>&1; then
   ts=$(date '+%Y-%m-%d %H:%M:%S')
-  msg="[DRY-RUN ${ts}] lerobot-control --robot.type=so100_follower --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --fps 30 (for ${DURATION}s)"
+  msg="[DRY-RUN ${ts}] ${CONTROL_BIN} --robot.type=${ROBOT_TYPE} --robot.port=${ROBOT_PORT} --policy.path=${POLICY_PATH} --fps 30 ${EXTRA_ARGS} (for ${DURATION}s)"
   echo "$msg" >&2
   # Append to log file for confirmation
   {
@@ -36,16 +44,18 @@ fi
 
 set -x
 if [ -n "${TIMEOUT_BIN}" ]; then
-  "${TIMEOUT_BIN}" "${DURATION}" lerobot-control \
-    --robot.type=so100_follower \
+  "${TIMEOUT_BIN}" "${DURATION}" "${CONTROL_BIN}" \
+    --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
-    --fps 30
+    --fps 30 \
+    ${EXTRA_ARGS}
 else
   echo "[WARN] timeout command not available; running without enforced duration" >&2
-  lerobot-control \
-    --robot.type=so100_follower \
+  "${CONTROL_BIN}" \
+    --robot.type="${ROBOT_TYPE}" \
     --robot.port="${ROBOT_PORT}" \
     --policy.path="${POLICY_PATH}" \
-    --fps 30
+    --fps 30 \
+    ${EXTRA_ARGS}
 fi
