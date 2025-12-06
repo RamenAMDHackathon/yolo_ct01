@@ -17,6 +17,11 @@ system:
   homing_sleep_before_s: 2
   homing_sleep_after_s: 2
 
+  # homereset.py を利用する場合のスクリプトパスと移動時間（秒）
+  # パスは相対/絶対のどちらでも指定可。未指定時はリポジトリ直下の homereset.py を探します。
+  home_reset_script: "homereset.py"
+  home_reset_duration_s: 4
+
   # フォロワーアームの初期位置（NORM 単位）
   robot_init_pose:
     shoulder_pan.pos: 14.42
