@@ -233,7 +233,7 @@ class TaskManager:
 
     def detect_all(self, frame) -> List[Tuple[str, float, Tuple[int, int, int, int]]]:
         """Return list of all detections (class_name, conf, bbox)."""
-        results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device,classes=[39,41])
+        results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device,classes=[39,41],augment=True)
         detections: List[Tuple[str, float, Tuple[int, int, int, int]]] = []
         if not results:
             return detections
