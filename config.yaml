@@ -1,5 +1,5 @@
 system:
-  camera_index: 4
+  camera_index: 0
   # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
   robot_port: "/dev/ttyACM1"
   # 実行モード: validate(検証・ドライラン) / production(本番・実行)
@@ -12,7 +12,9 @@ system:
   control_bin: "lerobot-record"
   robot_type: "so101_follower"
   robot_id: "my_awesome_follower_arm"
-  extra_args: "--robot.id=my_awesome_follower_arm --robot.cameras=\"{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}\" --dataset.single_task=\"put the pen in the white square\" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false"
+  # extra_args: "..."
+  #   未使用（manager → run_task.sh のどちらでも参照していません）。
+  #   以前は追加引数の受け渡しに使っていましたが、現在は run_task.sh 内の固定値に置き換えています。
 
   # ホームポジション適用時のスリープ（秒）
   homing_sleep_before_s: 0
@@ -23,20 +25,20 @@ system:
   home_reset_script: "homereset.py"
   home_reset_duration_s: 4
 
-  # フォロワーアームの初期位置（NORM 単位）
-  robot_init_pose:
-    shoulder_pan.pos: 14.42
-    shoulder_lift.pos: -96.63
-    elbow_flex.pos: 91.40
-    wrist_flex.pos: 74.78
-    wrist_roll.pos: 1.38
-    gripper.pos: 2.26
+  # フォロワーアームの初期位置（未使用）
+  # robot_init_pose:
+  #   shoulder_pan.pos: 14.42
+  #   shoulder_lift.pos: -96.63
+  #   elbow_flex.pos: 91.40
+  #   wrist_flex.pos: 74.78
+  #   wrist_roll.pos: 1.38
+  #   gripper.pos: 2.26
 
 # YOLOの推論設定（検証時の可視化/感度調整に使用）
 yolo:
   weights: "yolo11n.pt"   # 必要に応じて yolov8s.pt などへ変更
   conf: 0.35              # 低めに設定して検出しやすく（誤検出が多ければ上げる）
-  imgsz: 640              # 入力解像度（小物・俯瞰なら 960~1280 も検討）
+  imgsz: 960              # 入力解像度（小物・俯瞰なら 960~1280 も検討）
   draw_all: true          # ターゲット以外も可視化（検証用）
 
 # YOLOのクラス名をキーに、それぞれのロボット実行設定を記述

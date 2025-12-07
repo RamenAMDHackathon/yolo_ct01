@@ -82,7 +82,7 @@ checkpoints/
 *.bmp
 *.tif
 *.tiff
-
+log.txt
 # ---- Local config overrides / secrets ----
 config.local.yaml
 .env

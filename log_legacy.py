@@ -1,0 +1,86 @@
+import time
+import numpy as np
+from lerobot.common.robot_devices.robots.factory import make_robot
+
+# ==========================================
+# ユーザー設定値
+# ==========================================
+# ポート指定（環境に合わせて変更してください）
+ROBOT_PORT = "/dev/ttyACM1"
+ROBOT_TYPE = "so101_follower"
+
+# 指定された初期位置 (Degrees: 度数法)
+# 順番: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
+TARGET_POS_DEG = np.array([14.42, -96.63, 91.40, 74.78, 1.38, 2.26])
+
+def move_to_initial_position(robot, target_deg, duration=3.0):
+    """
+    ロボットを指定された角度へ指定時間をかけて移動させる関数
+    """
+    print(f"Moving to initial position: {target_deg} (degrees)...")
+    
+    # 1. 度数法(Degree) を 弧度法(Radian) に変換
+    # LeRobot/Dynamixelの内部制御はラジアンで行われるため
+    target_rad = np.deg2rad(target_deg)
+    
+    # 2. 現在の関節角度を取得
+    current_rad = robot.follower_arms["main"].read("present_position")
+    
+    # 3. 移動ステップの計算 (線形補間)
+    dt = 0.02  # 制御周期 (20ms)
+    steps = int(duration / dt)
+    
+    # numpyのlinspaceを使って、現在地から目標値までの軌跡を作る
+    # shape: (steps, 6)
+    trajectory = np.linspace(current_rad, target_rad, steps)
+    
+    # 4. ループで順番に指令を送る
+    start_time = time.time()
+    for i in range(steps):
+        # 次のステップの角度を取り出す
+        step_pos = trajectory[i]
+        
+        # ロボットに書き込み
+        robot.follower_arms["main"].write("goal_position", step_pos)
+        
+        # 次の周期まで待機（正確なタイミング制御のため）
+        elapsed = time.time() - start_time
+        expected = (i + 1) * dt
+        if expected > elapsed:
+            time.sleep(expected - elapsed)
+            
+    # 念のため最後に目標値をしっかり書き込む
+    robot.follower_arms["main"].write("goal_position", target_rad)
+    time.sleep(0.5) # 整定待ち
+    print("Movement complete.")
+
+def main():
+    print(f"Connecting to {ROBOT_TYPE} on {ROBOT_PORT}...")
+    
+    # ロボットの初期化と接続
+    robot = make_robot(
+        robot_type=ROBOT_TYPE,
+        overrides={"robot.port": ROBOT_PORT}
+    )
+    
+    try:
+        robot.connect()
+        
+        # 指定した初期位置へ移動を実行
+        move_to_initial_position(robot, TARGET_POS_DEG, duration=4.0)
+        
+        # 確認のため現在の値を表示
+        final_pos = robot.follower_arms["main"].read("present_position")
+        print(f"Final Position (Deg): {np.degrees(final_pos)}")
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+    
+    finally:
+        if robot.is_connected:
+            robot.disconnect()
+            print("Disconnected.")
+
+if __name__ == "__main__":
+    main()
+

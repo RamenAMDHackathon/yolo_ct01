@@ -129,7 +129,11 @@ class TaskManager:
                 print(f"[manager] [cleanup] Failed to remove {p}: {e}")
 
     def apply_initial_pose_if_possible(self):
-        """Call homereset via the standalone runner script; log around it."""
+        """Apply homing before task generation using configured script.
+
+        Prefers config `home_reset_script` (e.g., homereset.py). Falls back to
+        scripts/run_home_reset.py if available. Sleeps before/after as configured.
+        """
         if self.robot_init_pose_cfg:
             print("[manager] [robot] Initial pose (config): " + ", ".join(f"{k}={v}" for k, v in self.robot_init_pose_cfg.items()))
         try:
@@ -141,7 +145,7 @@ class TaskManager:
 
         applied = self.run_home_reset_script()
         if not applied:
-            print("[manager] [robot] Homereset runner not available; skipped.")
+            print("[manager] [robot] Homereset script/runner not available; skipped.")
 
         try:
             if self.homing_sleep_after_s > 0:
@@ -150,33 +154,49 @@ class TaskManager:
         except Exception:
             pass
 
-    def _build_init_pose_vector_deg(self) -> Optional[List[float]]:
-        """(Deprecated) kept for compatibility; no longer used."""
-        return None
-
-    def apply_initial_pose_python(self, duration_s: float = 4.0) -> bool:
-        """(Deprecated) no-op to keep compatibility; use homereset.py runner instead."""
-        return False
 
     def run_home_reset_script(self) -> bool:
-        """Invoke scripts/run_home_reset.py to execute homereset.py using config values."""
-        runner = os.path.join(os.getcwd(), "scripts", "run_home_reset.py")
-        if not os.path.isfile(runner):
-            print(f"[manager] [robot] run_home_reset.py not found: {runner}")
-            return False
+        """Execute homing script.
 
-        cmd = [sys.executable, runner, "--config", self.config_path]
+        Order:
+          1) If `home_reset_script` is set and exists, run it directly.
+          2) Else if scripts/run_home_reset.py exists, run it with config/args.
+          3) Else return False.
+        """
+        # 1) Configured homereset script
         if self.home_reset_script:
-            cmd += ["--script-path", str(self.home_reset_script)]
-        robot_type = os.getenv("ROBOT_TYPE", self.robot_type_default)
-        cmd += ["--port", str(self.robot_port), "--type", str(robot_type), "--duration", str(self.home_reset_duration_s)]
-        print(f"[manager] [robot] Running: {' '.join(cmd)}")
-        try:
-            subprocess.run(cmd, check=False)
-            return True
-        except Exception as e:
-            print(f"[manager] [robot] Failed to execute run_home_reset.py: {e}")
-            return False
+            cand = self.home_reset_script
+            if not os.path.isabs(cand):
+                cand = os.path.join(os.getcwd(), cand)
+            if os.path.isfile(cand):
+                cmd = [sys.executable, cand]
+                print(f"[manager] [robot] Running homereset directly: {' '.join(cmd)}")
+                try:
+                    subprocess.run(cmd, check=False)
+                    return True
+                except Exception as e:
+                    print(f"[manager] [robot] Failed to execute homereset.py: {e}")
+                    # fallthrough to try runner
+
+        # 2) Fallback to internal runner
+        runner = os.path.join(os.getcwd(), "scripts", "run_home_reset.py")
+        if os.path.isfile(runner):
+            cmd = [sys.executable, runner, "--config", self.config_path]
+            if self.home_reset_script:
+                cmd += ["--script-path", str(self.home_reset_script)]
+            robot_type = os.getenv("ROBOT_TYPE", self.robot_type_default)
+            cmd += ["--port", str(self.robot_port), "--type", str(robot_type), "--duration", str(self.home_reset_duration_s)]
+            print(f"[manager] [robot] Running via runner: {' '.join(cmd)}")
+            try:
+                subprocess.run(cmd, check=False)
+                return True
+            except Exception as e:
+                print(f"[manager] [robot] Failed to execute run_home_reset.py: {e}")
+                return False
+
+        # 3) Nothing available
+        print("[manager] [robot] No homing script found.")
+        return False
 
     def open_camera(self) -> cv2.VideoCapture:
         cap = cv2.VideoCapture(self.camera_index)
@@ -188,24 +208,6 @@ class TaskManager:
                 cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
         return cap
 
-    # def find_target_in_frame(self, frame) -> Optional[str]:
-    #     """Run YOLO and return the first matched target class name if present."""
-    #     results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device, classes=[39,41])
-    #     print(results)
-    #     if not results:
-    #         return None
-    #     res = results[0]
-    #     if res.boxes is None or res.boxes.cls is None or res.boxes.xyxy is None:
-    #         return None
-    #     xyxy = res.boxes.xyxy.cpu().numpy()
-    #     confs = res.boxes.conf.cpu().numpy() if res.boxes.conf is not None else []
-    #     clss = res.boxes.cls.cpu().numpy().astype(int)
-    #     for i in range(len(xyxy)):
-    #         cls_id = int(clss[i])
-    #         cls_name = self.class_names.get(cls_id, str(cls_id))
-    #         if cls_name in self.targets:
-    #             return cls_name
-    #     return None
 
     def detect_targets(self, frame) -> List[Tuple[str, float, Tuple[int, int, int, int]]]:
         """Return list of (class_name, confidence, (x1,y1,x2,y2)) for configured targets only."""
