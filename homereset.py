@@ -1,17 +1,15 @@
 from lerobot.robots.so101_follower import SO101Follower, SO101FollowerConfig
-
+        
 print("SO-101に接続中...")
 
-# 設定を作成
+# 險ｭ螳壹ｒ菴懈�
 config = SO101FollowerConfig(
     port="/dev/ttyACM1",
     id="my_awesome_follower_arm",
 )
 
 # ロボットを初期化して接続
-
 robot = SO101Follower(config)
-
 robot.connect()
 
 HOME={

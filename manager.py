@@ -34,7 +34,7 @@ class TargetTask:
 
 
 class TaskManager:
-    def __init__(self, config_path: str = "config.yaml", weights: str = "yolov8n.pt", conf_threshold: float = 0.5):
+    def __init__(self, config_path: str = "config.yaml", weights: str = "yolov11n.pt", conf_threshold: float = 0.5):
         self.config_path = config_path
         self.weights = weights
         self.conf_threshold = conf_threshold
@@ -188,23 +188,24 @@ class TaskManager:
                 cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
         return cap
 
-    def find_target_in_frame(self, frame) -> Optional[str]:
-        """Run YOLO and return the first matched target class name if present."""
-        results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device)
-        if not results:
-            return None
-        res = results[0]
-        if res.boxes is None or res.boxes.cls is None or res.boxes.xyxy is None:
-            return None
-        xyxy = res.boxes.xyxy.cpu().numpy()
-        confs = res.boxes.conf.cpu().numpy() if res.boxes.conf is not None else []
-        clss = res.boxes.cls.cpu().numpy().astype(int)
-        for i in range(len(xyxy)):
-            cls_id = int(clss[i])
-            cls_name = self.class_names.get(cls_id, str(cls_id))
-            if cls_name in self.targets:
-                return cls_name
-        return None
+    # def find_target_in_frame(self, frame) -> Optional[str]:
+    #     """Run YOLO and return the first matched target class name if present."""
+    #     results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device, classes=[39,41])
+    #     print(results)
+    #     if not results:
+    #         return None
+    #     res = results[0]
+    #     if res.boxes is None or res.boxes.cls is None or res.boxes.xyxy is None:
+    #         return None
+    #     xyxy = res.boxes.xyxy.cpu().numpy()
+    #     confs = res.boxes.conf.cpu().numpy() if res.boxes.conf is not None else []
+    #     clss = res.boxes.cls.cpu().numpy().astype(int)
+    #     for i in range(len(xyxy)):
+    #         cls_id = int(clss[i])
+    #         cls_name = self.class_names.get(cls_id, str(cls_id))
+    #         if cls_name in self.targets:
+    #             return cls_name
+    #     return None
 
     def detect_targets(self, frame) -> List[Tuple[str, float, Tuple[int, int, int, int]]]:
         """Return list of (class_name, confidence, (x1,y1,x2,y2)) for configured targets only."""
@@ -230,7 +231,7 @@ class TaskManager:
 
     def detect_all(self, frame) -> List[Tuple[str, float, Tuple[int, int, int, int]]]:
         """Return list of all detections (class_name, conf, bbox)."""
-        results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device)
+        results = self.model.predict(source=frame, verbose=False, conf=self.conf_threshold, imgsz=self.imgsz, device=self.device,classes=[39,41])
         detections: List[Tuple[str, float, Tuple[int, int, int, int]]] = []
         if not results:
             return detections
@@ -340,7 +341,7 @@ class TaskManager:
                                 policy_path = task.policy_path
                                 duration = task.duration
                                 ts = time.strftime("%Y-%m-%d %H:%M:%S")
-                                # コマンド生成前に必ずカメラを解放（validate / production 共通）
+                                # ã‚³ãƒžãƒ³ãƒ‰ç”Ÿæˆå‰ã«å¿…ãšã‚«ãƒ¡ãƒ©ã‚’è§£æ”¾ï¼ˆvalidate / production å…±é€šï¼‰
                                 print("[manager] [camera] Releasing camera before task generation...")
                                 try:
                                     cap.release()
@@ -350,15 +351,15 @@ class TaskManager:
                                 time.sleep(0.3)
                                 print("[manager] [camera] Camera released.")
 
-                                # 事前クリーンアップ: 過去の評価出力を削除
+                                # äº‹å‰ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—: éŽåŽ»ã®è©•ä¾¡å‡ºåŠ›ã‚’å‰Šé™¤
                                 self.cleanup_eval_outputs()
-                                # 初期姿勢の適用（ベストエフォート）
+                                # åˆæœŸå§¿å‹¢ã®é©ç”¨ï¼ˆãƒ™ã‚¹ãƒˆã‚¨ãƒ•ã‚©ãƒ¼ãƒˆï¼‰
                                 self.apply_initial_pose_if_possible()
 
                                 try:
                                     if self.dry_run:
-                                        # 検証モードでもカメラ解放後にコマンドを生成（ログ出力）
-                                        # 動的なタスク文言を反映
+                                        # æ¤œè¨¼ãƒ¢ãƒ¼ãƒ‰ã§ã‚‚ã‚«ãƒ¡ãƒ©è§£æ”¾å¾Œã«ã‚³ãƒžãƒ³ãƒ‰ã‚’ç”Ÿæˆï¼ˆãƒ­ã‚°å‡ºåŠ›ï¼‰
+                                        # å‹•çš„ãªã‚¿ã‚¹ã‚¯æ–‡è¨€ã‚’åæ˜ 
                                         single_task = (task.task_text or "").strip()
                                         dry_msg = f"[DRY-RUN {ts}] {control_bin} --robot.type={robot_type} --robot.port={robot_port} --policy.path={policy_path} --dataset.single_task=\"{single_task}\" (for {duration}s)"
                                         print(dry_msg)
@@ -384,7 +385,7 @@ class TaskManager:
                                 except FileNotFoundError:
                                     print("[manager] run_task.sh not found. Ensure it is present and executable.")
                                 finally:
-                                    # タスク生成/実行後はカメラ再オープン（共通）
+                                    # ã‚¿ã‚¹ã‚¯ç”Ÿæˆ/å®Ÿè¡Œå¾Œã¯ã‚«ãƒ¡ãƒ©å†ã‚ªãƒ¼ãƒ—ãƒ³ï¼ˆå…±é€šï¼‰
                                     print("[manager] [camera] Reopening camera after task...")
                                     try:
                                         cap = self.open_camera()

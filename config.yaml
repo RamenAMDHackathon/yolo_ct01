@@ -1,5 +1,5 @@
 system:
-  camera_index: 0
+  camera_index: 4
   # デフォルトのロボットポート。環境変数 ROBOT_PORT により上書き可能。
   robot_port: "/dev/ttyACM1"
   # 実行モード: validate(検証・ドライラン) / production(本番・実行)
@@ -15,8 +15,8 @@ system:
   extra_args: "--robot.id=my_awesome_follower_arm --robot.cameras=\"{top: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}, side: {type: opencv, index_or_path: 6, width: 640, height: 480, fps: 30}}\" --dataset.single_task=\"put the pen in the white square\" --dataset.repo_id=AmdRamen/eval_mission_1 --dataset.root=/home/amddemo/hackathon_ramen/outputs/eval_lerobot_dataset/ --dataset.episode_time_s=20 --dataset.num_episodes=5 --dataset.push_to_hub=false"
 
   # ホームポジション適用時のスリープ（秒）
-  homing_sleep_before_s: 2
-  homing_sleep_after_s: 2
+  homing_sleep_before_s: 0
+  homing_sleep_after_s: 0.5
 
   # homereset.py を利用する場合のスクリプトパスと移動時間（秒）
   # パスは相対/絶対のどちらでも指定可。未指定時はリポジトリ直下の homereset.py を探します。
@@ -34,7 +34,7 @@ system:
 
 # YOLOの推論設定（検証時の可視化/感度調整に使用）
 yolo:
-  weights: "yolov8n.pt"   # 必要に応じて yolov8s.pt などへ変更
+  weights: "yolo11n.pt"   # 必要に応じて yolov8s.pt などへ変更
   conf: 0.35              # 低めに設定して検出しやすく（誤検出が多ければ上げる）
   imgsz: 640              # 入力解像度（小物・俯瞰なら 960~1280 も検討）
   draw_all: true          # ターゲット以外も可視化（検証用）
@@ -44,8 +44,8 @@ targets:
   bottle:
     policy_path: "AmdRamen/mission2_bottle"
     task_text: "put a paper bottle in a trash bag"
-    duration: 20
+    duration: 30
   cup:
     policy_path: "AmdRamen/mission2_cup"
     task_text: "put a paper cup in a trash bag"
-    duration: 20
+    duration: 30
