@@ -44,10 +44,10 @@ yolo:
 # YOLOのクラス名をキーに、それぞれのロボット実行設定を記述
 targets:
   bottle:
-    policy_path: "AmdRamen/mission2_bottle"
+    policy_path: "AmdRamen/mission2_bottle_clean"
     task_text: "put a paper bottle in a trash bag"
     duration: 30
   cup:
-    policy_path: "AmdRamen/mission2_cup"
+    policy_path: "AmdRamen/mission2_cup_clean"
     task_text: "put a paper cup in a trash bag"
     duration: 30
